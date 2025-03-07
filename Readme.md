@@ -80,15 +80,38 @@ This section loads the required libraries and reads the input image.
 ```python
 # Convert to HSV color space for better blue detection
 hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+```
+<table>
 
+  <tr>
+    <td><img src="docs/hsv_image.jpg" alt="HSV image" width="50%"/></td>
+  </tr>
+</table>
+
+```python
 # Define range for blue color (adjust these values based on your image)
 lower_blue = np.array([100, 50, 50])  # Lower bound for blue in HSV
 upper_blue = np.array([130, 255, 255])  # Upper bound for blue in HSV
 blue_mask = cv2.inRange(hsv_image, lower_blue, upper_blue)
+```
+<table>
 
+  <tr>
+    <td><img src="docs/blue_mask.jpg" alt="Blue Mask image" width="50%"/></td>
+  </tr>
+</table>
+
+```python
 # Invert the blue mask to use it for removing blue ink
 blue_mask_inv = cv2.bitwise_not(blue_mask)
 ```
+<table>
+
+  <tr>
+    <td><img src="docs/blue_mask_inv.jpg" alt="Blue Mask Invertedimage" width="50%"/></td>
+  </tr>
+</table>
+
 This stage detects blue ink by:
 - Converting the image to HSV color space (better for color detection than RGB)
 - Creating a mask for blue pixels using color thresholds
@@ -100,6 +123,13 @@ This stage detects blue ink by:
 gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 black_mask = cv2.threshold(gray_image, 110, 255, cv2.THRESH_BINARY_INV)[1]  # Adjust threshold (110) as needed
 ```
+<table>
+
+  <tr>
+    <td><img src="docs/black_mask.jpg" alt="Black Mask image" width="50%"/></td>
+  </tr>
+</table>
+
 This stage identifies the black printed text by:
 - Converting the image to grayscale
 - Using thresholding to separate dark text from the background
@@ -108,10 +138,25 @@ This stage identifies the black printed text by:
 ```python
 # Combine masks to keep black content and remove blue ink
 combined_mask = cv2.bitwise_and(black_mask, blue_mask_inv)
+```
+<table>
 
+  <tr>
+    <td><img src="docs/combined_mask.jpg" alt="Combined Mask image" width="50%"/></td>
+  </tr>
+</table>
+
+```python
 # Apply the mask to the original image to retain only black content
 clean_image = cv2.bitwise_and(image, image, mask=combined_mask)
 ```
+<table>
+
+  <tr>
+    <td><img src="docs/clean_image.jpg" alt="Clean Mask image" width="50%"/></td>
+  </tr>
+</table>
+
 This crucial step:
 - Combines the inverted blue mask with the black text mask
 - Creates a mask that includes only black text (no blue ink)
@@ -121,14 +166,38 @@ This crucial step:
 ```python
 # Convert to grayscale for enhancement
 clean_gray = cv2.cvtColor(clean_image, cv2.COLOR_BGR2GRAY)
+```
+<table>
 
+  <tr>
+    <td><img src="docs/clean_gray.jpg" alt="Clean Gray image" width="50%"/></td>
+  </tr>
+</table>
+
+```python
 # Enhance contrast using CLAHE
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 enhanced = clahe.apply(clean_gray)
+```
+<table>
 
+  <tr>
+    <td><img src="docs/enhanced.jpg" alt="Enhanced contrast image" width="50%"/></td>
+  </tr>
+</table>
+
+```python
 # Denoise the image
 denoised = cv2.fastNlMeansDenoising(enhanced, None, 10, 7, 21)
+```
+<table>
 
+  <tr>
+    <td><img src="docs/denoised.jpg" alt="Denoised  image" width="50%"/></td>
+  </tr>
+</table>
+
+```python
 # Apply binary thresholding to get black text on white background
 _, binary = cv2.threshold(denoised, 200, 255, cv2.THRESH_BINARY)
 
@@ -149,8 +218,16 @@ This enhancement stage:
 # Create the final output image (white background with black text)
 output_image = np.ones_like(image) * 255
 output_image[combined_mask > 0] = 0  # Set black regions
-output_image = cv2.cvtColor(output_image, cv2.COLOR_BGR2GRAY)  # Convert to grayscale for simplicity
+output_image = cv2.cvtColor(output_image, cv2.COLOR_BGR2GRAY)
+# Convert to grayscale for simplicity
 ```
+<table>
+
+  <tr>
+    <td><img src="docs/output_image.jpg" alt="output_image" width="50%"/></td>
+  </tr>
+</table>
+
 This stage:
 - Creates a clean white background
 - Adds the black text from the combined mask
